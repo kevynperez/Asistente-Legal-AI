@@ -1,0 +1,33 @@
+.dots {
+    display: inline-block;
+}
+
+.dots::after,
+.dots::before,
+.dots span {
+    content: '';
+    display: inline-block;
+    width: 8px; /* Ajusta el tamaño del punto */
+    height: 8px; /* Ajusta el tamaño del punto */
+    border-radius: 50%;
+    background-color: currentColor; /* Usa el color actual del texto */
+    margin-left: 2px; /* Espaciado entre puntos */
+    animation: bounce 0.6s infinite alternate; /* Animación continua */
+}
+
+.dots::after {
+    animation-delay: 0.2s; /* Segundo punto */
+}
+
+.dots::before {
+    animation-delay: 0.4s; /* Tercer punto */
+}
+
+@keyframes bounce {
+    0% {
+        transform: translateY(0);
+    }
+    100% {
+        transform: translateY(-5px); /* Ajusta la altura del salto (más suave) */
+    }
+}
