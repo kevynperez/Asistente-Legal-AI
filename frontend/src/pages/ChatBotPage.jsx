@@ -1,17 +1,29 @@
-import {Box,colors,IconButton,InputAdornment,TextField,Typography, useTheme} from "@mui/material";
+import {
+  Box,
+  colors,
+  Divider,
+  IconButton,
+  InputAdornment,
+  TextField,
+  Tooltip,
+  Typography,
+  useTheme,
+} from "@mui/material";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import logo from "../assets/chat-bot.png";
 import logoChatLow from "../assets/chat-bot2.png";
 import { useForm } from "react-hook-form";
 import SendIcon from "@mui/icons-material/Send";
 import { responder } from "../api/request";
-import '../style/ChatBotStyleForm.css'
+import "../style/ChatBotStyleForm.css";
+import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
+import AttachFileIcon from "@mui/icons-material/AttachFile";
 
 const heightNavbar = "65px";
 const widthMenuBar = "320px";
 
 function ChatBotPage() {
-  const {register,handleSubmit,setValue,formState: { errors }} = useForm();
+  const { register, handleSubmit, setValue } = useForm();
   const theme = useTheme();
   const [isTyping, setIsTyping] = useState(false);
   const [response, setResponse] = useState({ respuesta: "", pregunta: "" });
@@ -21,20 +33,33 @@ function ChatBotPage() {
   const [borderRadiusValue, setBorderRadiusValue] = useState("2rem");
   const boxRef = useRef(null);
   const [boxWidth, setBoxWidth] = useState(0);
+  const [listResponse, setListaResponse] = useState([]);
+  const lastQuestionRef = useRef(null);
+
+  useEffect(() => {
+    if (lastQuestionRef.current) {
+      lastQuestionRef.current.scrollIntoView({
+        behavior: "smooth",
+        bloock: "nearest",
+      });
+    }
+  }, [listResponse]); // Dependencia para ejecutar cada vez que cambia el arreglo
 
   const onSubmit = async (data) => {
-    setIsTyping(true);
-    const datos = await responder(data.texto);
-    setResponse({
-      respuesta: datos.data.respuesta,
-      pregunta: datos.data.pregunta,
-    });
-    setValue("texto", "");
-    setMinRows(1);
-    setIsFixed(true);
-    setIsTyping(false);
-    setPaddingValue("0.5rem");
-    setBorderRadiusValue("3rem");
+    if (data.texto != "") {
+      setIsTyping(true);
+      const datos = await responder(data.texto);
+      setResponse({
+        respuesta: datos.data.respuesta,
+        pregunta: datos.data.pregunta,
+      });
+      setValue("texto", "");
+      setMinRows(1);
+      setIsFixed(true);
+      setIsTyping(false);
+      setPaddingValue("0.5rem");
+      setBorderRadiusValue("3rem");
+    }
   };
 
   const handleKeyDown = useCallback(
@@ -48,10 +73,15 @@ function ChatBotPage() {
   );
 
   // Función para actualizar el ancho del box
-  const updateBoxWidth = ()=> {
+  const updateBoxWidth = () => {
     if (boxRef.current.offsetWidth != null) {
       setBoxWidth(boxRef.current.offsetWidth);
     }
+  };
+
+  //Funcion que se ejecuta al presionar +
+  const pressMore = () => {
+    console.log("Adjuntar archivo.");
   };
 
   useEffect(() => {
@@ -68,6 +98,12 @@ function ChatBotPage() {
       resizeObserver.disconnect();
     };
   }, []);
+
+  useEffect(() => {
+    if (response.pregunta != "") {
+      setListaResponse([...listResponse, response]);
+    }
+  }, [response]);
 
   return (
     <Box
@@ -91,33 +127,42 @@ function ChatBotPage() {
             mb: "150px",
             width: "80%", // Limitar el ancho para evitar scroll
             borderRadius: "1rem",
-            background: theme.palette.mode==='dark' ? '#343a40' : '#F9F9FE',
-            boxShadow: theme.palette.mode==='dark' ? 
-            '10px 10px 20px #212529, -10px -10px 30px #6c757d' :
-            '20px 20px 80px #bebebe, -20px -20px 80px #bebebe',
+            background: theme.palette.mode === "dark" ? "#343a40" : "#F9F9FE",
+            boxShadow:
+              theme.palette.mode === "dark"
+                ? "10px 10px 20px #212529, -5px -5px 10px #6c757d"
+                : "10px 10px 20px #E9ECEF, -5px -5px 10px #bebebe",
             padding: "2rem",
           }}
         >
-          <Box sx={{ width: "100%" }}>
-            <Typography variant="h6" component="span" fontWeight="bold">
-              Pregunta:
-            </Typography>
-            <Typography variant="body1" component="span">
-              {` ${response.pregunta.toUpperCase()}`}
-            </Typography>
-          </Box>
-          <Box sx={{ width: "100%" }}>
-            <Typography variant="h6" component="span" fontWeight="bold">
-              Respuesta:
-            </Typography>
-            <Typography
-              variant="body1"
-              component="span"
-              sx={{ textAlign: "justify", display: "block" }}
-            >
-              {` ${response.respuesta}`}
-            </Typography>
-          </Box>
+          {listResponse.map((resp, index) => (
+            <div key={index}>
+              {listResponse.length > 1 && index >= 1 && (
+                <Box ref={lastQuestionRef} sx={{ p: "2rem" }}></Box>
+              )}
+
+              <Box sx={{ width: "100%" }}>
+                <Typography variant="h6" component="span" fontWeight="bold">
+                  Pregunta:
+                </Typography>
+                <Typography variant="body1" component="span">
+                  {` ${resp.pregunta.toUpperCase()}`}
+                </Typography>
+              </Box>
+              <Box sx={{ width: "100%" }}>
+                <Typography variant="h6" component="span" fontWeight="bold">
+                  Respuesta:
+                </Typography>
+                <Typography
+                  variant="body1"
+                  component="span"
+                  sx={{ textAlign: "justify", display: "block" }}
+                >
+                  {` ${resp.respuesta}`}
+                </Typography>
+              </Box>
+            </div>
+          ))}
         </Box>
       )}
 
@@ -130,27 +175,35 @@ function ChatBotPage() {
           bottom: isFixed ? "0" : "center",
           padding: paddingValue,
           borderRadius: borderRadiusValue,
-          background: theme.palette.mode==='dark' ? '#343a40' : '#F9F9FE',
-          boxShadow: theme.palette.mode==='dark' ? 
-            '10px 10px 20px #212529, -10px -10px 30px #6c757d' :
-            '20px 20px 80px #bebebe, -20px -20px 80px #bebebe',
+          background: theme.palette.mode === "dark" ? "#343a40" : "#F9F9FE",
+          boxShadow:
+            theme.palette.mode === "dark"
+              ? "10px 10px 20px #212529, -5px -5px 10px #6c757d"
+              : "10px 10px 20px #E9ECEF, -5px -5px 10px #bebebe",
           mb: "2rem",
           gap: "0.5rem",
         }}
       >
-        <Box pb={"0.1rem"}>
+        <Box>
           <img
-            src={response.pregunta=="" ? logo : logoChatLow}
-            height={response.pregunta === "" ? "150px" : "60px"}
+            src={response.pregunta == "" ? logo : logoChatLow}
+            height={response.pregunta === "" ? "150px" : "50px"}
             alt="bot IA"
           />
         </Box>
 
         <form onSubmit={handleSubmit(onSubmit)} style={{ width: "100%" }}>
-          <Box>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              flexDirection: "row",
+            }}
+          >
             <TextField
               id="text-area"
-              {...register("texto", { required: "El campo es requerido" })}
+              {...register("texto")}
               autoComplete="off"
               label={
                 isTyping ? (
@@ -164,6 +217,10 @@ function ChatBotPage() {
               placeholder="Qué hay de nuevo ..."
               multiline
               sx={{
+                "& .MuiOutlinedInput-root": {
+                  padding: response.pregunta == "" ? "1rem" : "0.5rem", // Ajusta el padding aquí
+                  textAlign: "center",
+                },
                 width: "100%",
                 "& .MuiOutlinedInput-notchedOutline": {
                   borderRadius: borderRadiusValue, // Cambia el valor según lo que necesites
@@ -176,16 +233,29 @@ function ChatBotPage() {
                 },
               }} // Ajustar a todo el ancho disponible
               minRows={minRows}
-              error={!!errors.texto}
-              helperText={errors.texto ? errors.texto.message : ""}
               InputProps={{
                 endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton
-                      type="submit"
-                      sx={{ color: "primary.main", padding: 0 }}
-                    >
-                      <SendIcon />
+                  <InputAdornment position="start">
+                    <Tooltip title="adjuntar archivo" placement="top" arrow>
+                      <IconButton onClick={pressMore}>
+                        <AddCircleOutlineIcon
+                          sx={{
+                            color: "primary.main",
+                            height: response.pregunta == "" ? "35px" : "25px",
+                            width: response.pregunta == "" ? "35px" : "25px",
+                          }}
+                        />
+                      </IconButton>
+                    </Tooltip>
+
+                    <IconButton type="submit" size="small">
+                      <SendIcon
+                        sx={{
+                          color: "primary.main",
+                          height: response.pregunta == "" ? "35px" : "25px",
+                          width: response.pregunta == "" ? "35px" : "25px",
+                        }}
+                      />
                     </IconButton>
                   </InputAdornment>
                 ),
